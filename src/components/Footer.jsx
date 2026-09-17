@@ -23,7 +23,7 @@ export default function Footer({ showToast }) {
               <img
                 src="/logo.webp"
                 alt="DUDI Software Logo"
-                className="h-10 w-10 object-contain bg-red-600 rounded-lg p-1.5 shadow-md shadow-red-600/20"
+                className="h-10 w-auto object-contain"
                 width="40"
                 height="40"
               />

@@ -160,24 +160,24 @@ export default function Pricing({ onSelectPackage }) {
   ]
 
   return (
-    <section id="pricing" className="landing-section bg-gradient-to-b from-[#1c222d] via-[#161a23] to-[#12151d] py-10 lg:py-16 relative overflow-hidden text-white border-y border-slate-800/80">
+    <section id="pricing" className="landing-section bg-gradient-to-b from-slate-50/70 via-white to-slate-50/70 py-10 lg:py-16 relative overflow-hidden text-slate-800 border-y border-slate-200/80">
       {/* Subtle modern geometric background texture */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)] bg-[size:28px_28px] pointer-events-none" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#00000005_1px,transparent_1px),linear-gradient(to_bottom,#00000005_1px,transparent_1px)] bg-[size:28px_28px] pointer-events-none" />
       
       {/* Rich Multi-color Ambient Loang Glow Mesh Background */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[300px] bg-gradient-to-r from-red-600/15 via-rose-500/15 to-blue-500/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[300px] bg-gradient-to-r from-red-200/35 via-rose-200/25 to-blue-200/35 rounded-full blur-3xl pointer-events-none" />
       
       {/* Loang Glow behind Card 1 (Rose) */}
-      <div className="absolute top-1/3 left-[15%] -translate-x-1/2 w-80 h-80 bg-rose-500/15 rounded-full blur-3xl animate-blob-1 pointer-events-none" />
+      <div className="absolute top-1/3 left-[15%] -translate-x-1/2 w-80 h-80 bg-rose-200/35 rounded-full blur-3xl animate-blob-1 pointer-events-none" />
       
       {/* Loang Glow behind Card 2 (Blue - Center) */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] h-[450px] bg-blue-500/20 rounded-full blur-3xl animate-pulse pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] h-[450px] bg-blue-200/40 rounded-full blur-3xl animate-pulse pointer-events-none" />
       
       {/* Loang Glow behind Card 3 (Emerald/Green) */}
-      <div className="absolute top-1/3 right-[15%] translate-x-1/2 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl animate-blob-2 pointer-events-none" />
+      <div className="absolute top-1/3 right-[15%] translate-x-1/2 w-80 h-80 bg-emerald-200/35 rounded-full blur-3xl animate-blob-2 pointer-events-none" />
       
       {/* Bottom ambient accent glow */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] bg-gradient-to-r from-rose-500/10 via-blue-500/10 to-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] bg-gradient-to-r from-rose-200/25 via-blue-200/25 to-emerald-200/25 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 relative z-10">
         
@@ -189,13 +189,13 @@ export default function Pricing({ onSelectPackage }) {
           transition={{ duration: 0.5 }}
           className="text-center max-w-2xl mx-auto mb-8"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-red-950/80 border border-red-500/40 text-red-300 text-[11px] font-bold uppercase tracking-wider mb-2 shadow-xs whitespace-nowrap">
+          <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-red-100 text-red-700 text-[11px] font-bold uppercase tracking-wider mb-2 shadow-xs whitespace-nowrap">
             S06 • Bảng Giá Dịch Vụ
           </div>
-          <h2 className="text-lg sm:text-2xl lg:text-3xl font-extrabold text-white tracking-tight drop-shadow-sm whitespace-normal sm:whitespace-nowrap">
+          <h2 className="text-lg sm:text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight whitespace-normal sm:whitespace-nowrap">
             Bảng Giá Website Bán Hàng Minh Bạch
           </h2>
-          <p className="mt-1.5 text-xs sm:text-sm text-slate-300">
+          <p className="mt-1.5 text-xs sm:text-sm text-slate-600">
             Chi phí rõ ràng, không phát sinh chi phí ẩn. Lựa chọn gói giải pháp phù hợp với định mức sản phẩm và mô hình kinh doanh của bạn.
           </p>
         </motion.div>
@@ -216,8 +216,8 @@ export default function Pricing({ onSelectPackage }) {
                 whileHover={{ y: plan.highlight ? -12 : -8, scale: plan.highlight ? 1.045 : 1.015, transition: { duration: 0.25 } }}
                 className={`group rounded-3xl overflow-visible transition-all duration-300 relative flex flex-col justify-between ${
                   plan.highlight
-                    ? 'shadow-[0_22px_50px_rgba(37,99,235,0.38)] ring-3 ring-blue-300/90 md:-translate-y-3.5 md:scale-[1.03] z-20'
-                    : 'shadow-slate-300/35 hover:shadow-2xl z-10'
+                    ? 'shadow-[0_22px_50px_rgba(37,99,235,0.32)] ring-3 ring-blue-400/80 md:-translate-y-3.5 md:scale-[1.03] z-20'
+                    : 'shadow-lg shadow-slate-300/40 hover:shadow-2xl z-10'
                 } ${plan.cardBg}`}
               >
                 {/* Glowing Aura for Highlight Card */}

@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react'
-import { Phone, MessageSquare, ArrowRight, Menu, X } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { Phone, MessageSquare, ArrowRight, Menu, X, ChevronDown, ExternalLink } from 'lucide-react'
 import { HOTLINE_NUMBER, ZALO_LINK, handlePhoneClick } from '../utils/phoneHandler'
 
 export default function Header({ showToast, onSelectPackage }) {
   const [isScrolled, setIsScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false)
+  const dropdownRef = useRef(null)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -12,6 +15,17 @@ export default function Header({ showToast, onSelectPackage }) {
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   const navLinks = [
@@ -22,7 +36,16 @@ export default function Header({ showToast, onSelectPackage }) {
     { name: 'Quy trình', href: '#process' },
     { name: 'Mẫu website', href: '#cases' },
     { name: 'Giới hạn', href: '#limitations' },
-    { name: 'FAQ', href: '#faq' },
+  ]
+
+  const webSystemLinks = [
+    { name: 'Cập nhật', href: 'https://dudi-page.vercel.app/' },
+    { name: 'Đơn giá', href: 'https://dudi-dongia.vercel.app/' },
+    { name: 'Dịch vụ', href: 'https://dudi-dichvu.vercel.app/' },
+    { name: 'SEO', href: 'https://dudisoftwareseo.vercel.app/' },
+    { name: 'Bảo trì', href: 'https://dudi-baotri.vercel.app/' },
+    { name: 'Giới thiệu', href: 'https://dudi-gioithieu.vercel.app/' },
+    { name: 'Tổng hợp', href: 'https://dudi-tonghop.vercel.app/' },
   ]
 
   const handleNavClick = (e, href) => {
@@ -69,20 +92,73 @@ export default function Header({ showToast, onSelectPackage }) {
         </a>
 
         {/* Desktop Navigation */}
-        <nav className="hidden lg:flex items-center space-x-1 xl:space-x-3 text-sm font-medium text-slate-700">
+        <nav className="hidden lg:flex items-center space-x-1 xl:space-x-2 text-sm font-medium text-slate-700">
           {navLinks.map((link) => (
             <a
               key={link.name}
               href={link.href}
               onClick={(e) => handleNavClick(e, link.href)}
-              className="px-3 py-1.5 rounded-lg hover:text-red-600 hover:bg-red-50/70 transition-colors whitespace-nowrap"
+              className="px-2.5 py-1.5 rounded-lg hover:text-red-600 hover:bg-red-50/70 transition-colors whitespace-nowrap"
             >
               {link.name}
             </a>
           ))}
+
+          {/* Hệ thống web Dropdown Menu (Placed before FAQ) */}
+          <div
+            ref={dropdownRef}
+            className="relative"
+            onMouseEnter={() => setDropdownOpen(true)}
+            onMouseLeave={() => setDropdownOpen(false)}
+          >
+            <button
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
+                dropdownOpen
+                  ? 'text-red-600 bg-red-50/90 shadow-xs'
+                  : 'text-red-600 hover:bg-red-50/70'
+              }`}
+              aria-expanded={dropdownOpen}
+            >
+              <span>Hệ thống web</span>
+              <ChevronDown
+                className={`w-3.5 h-3.5 transition-transform duration-200 stroke-[2.5] ${
+                  dropdownOpen ? 'rotate-180 text-red-600' : 'text-red-500'
+                }`}
+              />
+            </button>
+
+            {/* Dropdown Card */}
+            {dropdownOpen && (
+              <div className="absolute top-full left-1/2 -translate-x-1/2 pt-1.5 z-50 w-44">
+                <div className="bg-white rounded-2xl shadow-xl border border-slate-100/90 divide-y divide-slate-100 overflow-hidden py-1 animate-fade-in">
+                  {webSystemLinks.map((item) => (
+                    <a
+                      key={item.name}
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block px-5 py-2.5 text-sm font-bold text-slate-800 hover:text-red-600 hover:bg-red-50/60 transition-colors"
+                    >
+                      {item.name}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* FAQ Link */}
+          <a
+            href="#faq"
+            onClick={(e) => handleNavClick(e, '#faq')}
+            className="px-2.5 py-1.5 rounded-lg hover:text-red-600 hover:bg-red-50/70 transition-colors whitespace-nowrap"
+          >
+            FAQ
+          </a>
         </nav>
 
-        {/* Desktop CTA Button (Contact buttons removed as requested) */}
+        {/* Desktop CTA Button */}
         <div className="hidden lg:flex items-center">
           <a
             href="#contact"
@@ -127,6 +203,39 @@ export default function Header({ showToast, onSelectPackage }) {
                 {link.name}
               </a>
             ))}
+            <a
+              href="#faq"
+              onClick={(e) => handleNavClick(e, '#faq')}
+              className="px-3 py-2 text-sm font-medium text-slate-700 hover:text-red-600 hover:bg-red-50 rounded-lg"
+            >
+              FAQ
+            </a>
+          </div>
+
+          {/* Mobile Ecosystem Accordion */}
+          <div className="border border-red-100 rounded-xl overflow-hidden bg-red-50/40">
+            <button
+              onClick={() => setMobileDropdownOpen(!mobileDropdownOpen)}
+              className="w-full px-3 py-2.5 flex items-center justify-between text-sm font-bold text-red-700 bg-red-50/70"
+            >
+              <span>Hệ thống web</span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${mobileDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {mobileDropdownOpen && (
+              <div className="divide-y divide-red-100/60 bg-white">
+                {webSystemLinks.map((item) => (
+                  <a
+                    key={item.name}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block px-4 py-2 text-xs font-semibold text-slate-800 hover:text-red-600"
+                  >
+                    {item.name}
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-2 pt-2">
@@ -166,3 +275,4 @@ export default function Header({ showToast, onSelectPackage }) {
     </header>
   )
 }
+

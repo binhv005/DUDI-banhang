@@ -183,12 +183,12 @@ export default function ContactForm({ selectedPackage, onFormSubmitted }) {
         
         <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 lg:gap-8 items-center">
           
-          {/* LEFT COLUMN: 30% - Transparent Robot Character & 24/7 Floating Badge - Hidden on mobile */}
-          <div className="hidden lg:flex lg:col-span-3 flex-col items-center justify-center space-y-2 relative">
+          {/* LEFT COLUMN: 40% (4/10) - Mascot & 24/7 Badge */}
+          <div className="hidden lg:flex lg:col-span-4 flex-col items-center justify-center space-y-3 relative">
             
             {/* Rich Multi-layer Ambient Loang Glow behind the Robot */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-to-tr from-red-500/35 via-rose-400/30 to-amber-300/35 rounded-full blur-3xl animate-pulse pointer-events-none" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-br from-rose-500/25 to-pink-500/25 rounded-full blur-2xl animate-blob-1 pointer-events-none" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-tr from-red-500/35 via-rose-400/30 to-amber-300/35 rounded-full blur-3xl animate-pulse pointer-events-none" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-gradient-to-br from-rose-500/25 to-pink-500/25 rounded-full blur-2xl animate-blob-1 pointer-events-none" />
 
             {/* Robot Character with Natural Infinite Floating & Breathing Animation */}
             <div className="relative flex flex-col items-center justify-center">
@@ -257,9 +257,9 @@ export default function ContactForm({ selectedPackage, onFormSubmitted }) {
                 className="relative flex items-center justify-center cursor-pointer select-none z-10"
               >
                 <img
-                  src="/dudi-contact-transparent.webp"
-                  alt="DUDI Software Robot"
-                  className="max-h-[270px] sm:max-h-[310px] lg:max-h-[330px] w-auto object-contain drop-shadow-[0_16px_32px_rgba(225,29,72,0.22)] select-none pointer-events-auto filter transition-all duration-300 hover:drop-shadow-[0_20px_40px_rgba(225,29,72,0.35)]"
+                  src="/faq-mascot.webp"
+                  alt="DUDI Mascot"
+                  className="max-h-[300px] sm:max-h-[340px] lg:max-h-[360px] w-auto object-contain drop-shadow-[0_16px_32px_rgba(225,29,72,0.22)] select-none pointer-events-auto filter transition-all duration-300 hover:drop-shadow-[0_20px_40px_rgba(225,29,72,0.35)]"
                 />
               </motion.div>
 
@@ -275,7 +275,7 @@ export default function ContactForm({ selectedPackage, onFormSubmitted }) {
                   repeat: Infinity,
                   ease: "easeInOut"
                 }}
-                className="w-32 h-3.5 bg-gradient-to-r from-transparent via-slate-900/35 to-transparent rounded-full blur-xs -mt-1 pointer-events-none"
+                className="w-48 h-3.5 bg-gradient-to-r from-transparent via-slate-900/35 to-transparent rounded-full blur-xs -mt-1 pointer-events-none"
               />
             </div>
 
@@ -297,7 +297,7 @@ export default function ContactForm({ selectedPackage, onFormSubmitted }) {
               <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500/30 to-rose-600/40 rounded-full blur-xs pointer-events-none" />
 
               {/* Prominent Glassmorphic Pill Content */}
-              <div className="relative bg-white/95 backdrop-blur-xl border-2 border-red-500/30 rounded-full px-3.5 py-1.5 shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+              <div className="relative bg-white/95 backdrop-blur-xl border-2 border-red-500/30 rounded-full px-4 py-1.5 shadow-md hover:shadow-lg transition-all flex items-center gap-2">
                 {/* Pulsing Beacon with glow ripple */}
                 <div className="relative flex items-center justify-center w-3 h-3">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-80" />
@@ -305,15 +305,15 @@ export default function ContactForm({ selectedPackage, onFormSubmitted }) {
                 </div>
 
                 {/* Bold Prominent Text */}
-                <span className="text-[11px] font-black tracking-wider uppercase text-red-700 select-none whitespace-nowrap">
+                <span className="text-xs font-black tracking-wider uppercase text-red-700 select-none whitespace-nowrap">
                   Tư Vấn Miễn Phí 24/7
                 </span>
               </div>
             </motion.div>
           </div>
 
-          {/* RIGHT COLUMN: 70% - Spacious Form Card with Red Gradient */}
-          <div className="lg:col-span-7 w-full relative">
+          {/* RIGHT COLUMN: 60% (6/10) - Spacious Form Card with Red Gradient */}
+          <div className="lg:col-span-6 w-full relative">
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
