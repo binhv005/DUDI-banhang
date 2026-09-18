@@ -54,7 +54,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-slate-800 antialiased selection:bg-red-100 selection:text-red-700 relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-white text-slate-800 antialiased selection:bg-red-100 selection:text-red-700 relative">
       
       {/* Toast Notification */}
       <Toast

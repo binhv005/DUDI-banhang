@@ -12,12 +12,14 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: clip;
 }
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   color: #1E293B;
   background-color: #FFFFFF;
+  overflow-x: clip;
 }
 
 /* Section styling with responsive spacing */

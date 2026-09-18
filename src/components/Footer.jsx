@@ -1,5 +1,5 @@
 import React from 'react'
-import { Phone, Mail, MapPin, FileText, ArrowUp, ShieldCheck, MessageSquare } from 'lucide-react'
+import { Phone, Mail, MapPin, FileText, ArrowUp, Globe, MessageSquare } from 'lucide-react'
 import { HOTLINE_NUMBER, EMAIL_ADDRESS, ZALO_LINK, handlePhoneClick } from '../utils/phoneHandler'
 
 export default function Footer({ showToast }) {
@@ -20,13 +20,6 @@ export default function Footer({ showToast }) {
           {/* Col 1: Company Profile & Tax Info (5 cols) */}
           <div className="lg:col-span-5 space-y-3.5">
             <div className="flex items-center gap-3">
-              <img
-                src="/logo.webp"
-                alt="DUDI Software Logo"
-                className="h-10 w-auto object-contain"
-                width="40"
-                height="40"
-              />
               <span className="font-extrabold text-2xl tracking-tight text-white">
                 DUDI <span className="text-red-500">Software</span>
               </span>
@@ -153,15 +146,20 @@ export default function Footer({ showToast }) {
 
         </div>
 
-        {/* Bottom Legal Copyright & Regulatory statement */}
+        {/* Bottom Legal Copyright & Website Link */}
         <div className="pt-8 border-t border-neutral-900 flex flex-col sm:flex-row items-center justify-between text-xs text-neutral-400 gap-4">
           <div className="text-center sm:text-left">
-            Copyright © {new Date().getFullYear()} DUDI Software. All rights reserved.
+            © 2024 CÔNG TY TNHH GIẢI PHÁP PHẦN MỀM DUDI. All rights reserved.
           </div>
-          <div className="flex items-center gap-2 text-emerald-400 font-medium text-xs">
-            <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-            <span>Thông tin đăng ký kinh doanh chính thức</span>
-          </div>
+          <a
+            href="https://dudisoftware.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-neutral-900/80 border border-neutral-800 text-xs text-neutral-300 hover:text-white hover:border-neutral-700 transition-colors"
+          >
+            <Globe className="w-3.5 h-3.5 text-red-500 shrink-0" />
+            <span>dudisoftware.com</span>
+          </a>
         </div>
 
       </div>

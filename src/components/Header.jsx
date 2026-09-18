@@ -65,7 +65,7 @@ export default function Header({ showToast, onSelectPackage }) {
 
   return (
     <header
-      className={`sticky top-0 z-40 w-full transition-all duration-300 ${
+      className={`sticky top-0 z-50 w-full transition-all duration-300 ${
         isScrolled
           ? 'bg-white/95 backdrop-blur-md shadow-sm py-3.5 border-b border-slate-100'
           : 'bg-white py-5 border-b border-transparent'
@@ -74,13 +74,6 @@ export default function Header({ showToast, onSelectPackage }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         {/* Logo */}
         <a href="#" className="flex items-center gap-3 group focus:outline-none focus:ring-2 focus:ring-red-500 rounded-lg p-1">
-          <img
-            src="/logo.webp"
-            alt="DUDI SOFTWARE Logo"
-            className="h-9 w-auto object-contain transition-transform group-hover:scale-105"
-            width="120"
-            height="36"
-          />
           <div className="flex flex-col">
             <span className="font-extrabold text-lg sm:text-xl tracking-tight text-slate-900 leading-none whitespace-nowrap">
               DUDI <span className="text-red-600">SOFTWARE</span>
