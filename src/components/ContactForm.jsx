@@ -122,7 +122,7 @@ export default function ContactForm({ selectedPackage, onFormSubmitted }) {
   }
 
   // Handle submit with Google Apps Script email integration & rate limiting
-  const handleSubmit = async (e) => {
+    const handleSubmit = async (e) => {
     e.preventDefault()
     setRateLimitMessage('')
 
@@ -138,13 +138,57 @@ export default function ContactForm({ selectedPackage, onFormSubmitted }) {
 
     setIsSubmitting(true)
 
-    const payload = {
-      ...formData,
-      utm: utmParams,
-      submittedAt: new Date().toISOString()
+    const randomSuffix = Math.floor(100000 + Math.random() * 900000);
+    const fbLeadId = 'DUDI-' + randomSuffix;
+    const fbCreatedAt = new Date().toISOString();
+    const paymentStr = (formData.paymentMethods || []).join(', ') || 'COD';
+    const requirementsText = `Ngành hàng: ${formData.industry || 'Chưa rõ'} | Số lượng SP: ${formData.productCount || 'Dưới 50'} | Quản lý kho: ${formData.inventory || 'Không'} | Thanh toán: ${paymentStr} | Ghi chú: ${formData.description || 'Không có'}`;
+
+    // =========================================================================
+    // ⚡ 1. GỬI TRỰC TIẾP VÀO FIREBASE FIRESTORE (DASHBOARD REALTIME VERCEL)
+    // =========================================================================
+    const FIREBASE_PROJECT_ID = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_FIREBASE_PROJECT_ID) || 'dudi-leads';
+    const FIREBASE_API_KEY = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_FIREBASE_API_KEY) || 'AIzaSyBv2l4OH6dtaBqCx5D_rxtDT2HkMPfZ3kA';
+
+    try {
+      const fbUrl = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/leads/${fbLeadId}?key=${FIREBASE_API_KEY}`;
+      
+      const fbPayload = {
+        fields: {
+          id: { stringValue: fbLeadId },
+          customerName: { stringValue: formData.fullName.trim() || 'Khách hàng' },
+          phone: { stringValue: formData.phone.trim() || 'Chưa cung cấp' },
+          email: { stringValue: 'Chưa cung cấp' },
+          company: { stringValue: formData.industry ? (`Shop ${formData.industry}`) : 'Khách cá nhân' },
+          serviceId: { stringValue: 'dudi-banhang' },
+          serviceName: { stringValue: 'Website Bán Hàng & E-commerce' },
+          budget: { stringValue: formData.packageInterest || 'Gói Website Bán Hàng' },
+          source: { stringValue: 'Website Bán Hàng' },
+          sourceUrl: { stringValue: typeof window !== 'undefined' ? window.location.href : 'https://dudi-banhang.vercel.app' },
+          status: { stringValue: 'new' },
+          priority: { stringValue: 'high' },
+          createdAt: { stringValue: fbCreatedAt },
+          requirements: { stringValue: requirementsText }
+        }
+      };
+
+      fetch(fbUrl, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fbPayload)
+      }).then(res => {
+        console.log('🔥 [Firebase Live] Lead synced to Dashboard:', fbLeadId, res.status);
+      }).catch(err => console.warn('Firebase sync warning:', err));
+    } catch (fbErr) {
+      console.warn('Firebase error:', fbErr);
     }
 
-    console.log('Sending Form payload:', payload)
+    const payload = {
+      lead_id: fbLeadId,
+      ...formData,
+      utm: utmParams,
+      submittedAt: fbCreatedAt
+    }
 
     const googleScriptUrl = import.meta.env.VITE_GOOGLE_SCRIPT_URL
 
