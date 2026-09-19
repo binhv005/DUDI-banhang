@@ -69,48 +69,48 @@ export default function App() {
       />
 
       <main className="flex-1 w-full">
-        {/* S02: Hero (Background: Trắng / Gradient nhạt) */}
+        {/* S02: Hero */}
         <Hero
           onCtaClick={handleHeroCta}
         />
 
-        {/* S03: Đối tượng phù hợp (Background: Đỏ rất nhạt) */}
+        {/* S03: Đối tượng phù hợp */}
         <TargetAudience
           onSelectPackage={handleSelectPackage}
         />
 
-        {/* S04: Vấn đề (Background: Trắng) */}
+        {/* S04: Vấn đề */}
         <Problems />
 
-        {/* S05: Đầu ra / Nhận được (Background: Đỏ/Xám rất nhạt) */}
+        {/* S05: Đầu ra / Nhận được */}
         <Deliverables />
 
-        {/* S06: Bảng giá (Background: Trắng) */}
+        {/* S06: Bảng giá */}
         <Pricing
           onSelectPackage={handleSelectPackage}
         />
 
-        {/* S07: Quy trình (Background: Đỏ rất nhạt) */}
+        {/* S07: Quy trình */}
         <Process />
 
-        {/* S08: Case / Mẫu (Background: Trắng) */}
+        {/* S08: Case / Mẫu */}
         <CaseStudies
           onSelectPackage={handleSelectPackage}
         />
 
-        {/* S09: Giới hạn (Background: Đỏ/Xám rất nhạt) */}
+        {/* S09: Giới hạn */}
         <Limitations />
 
-        {/* S10: FAQ (Background: Trắng) */}
+        {/* S10: FAQ */}
         <FAQ />
 
-        {/* S11: Form nhận yêu cầu (Background: Đỏ rất nhạt) */}
+        {/* S11: Form nhận yêu cầu */}
         <ContactForm
           selectedPackage={selectedPackage}
           onFormSubmitted={() => showToast('Gửi yêu cầu tư vấn thành công!')}
         />
 
-        {/* S12: Final CTA (Background: Trắng / Red Card) */}
+        {/* S12: Final CTA */}
         <FinalCTA
           showToast={showToast}
           onCtaClick={handleHeroCta}
@@ -122,9 +122,10 @@ export default function App() {
         showToast={showToast}
       />
 
-      {/* S18: Floating Action Buttons (Call, Zalo, ScrollToTop) */}
+      {/* S18: Floating Action Buttons (Mascot AI Chat, Call, Zalo, ScrollToTop) */}
       <FloatingActions
         showToast={showToast}
+        onSelectPackage={handleSelectPackage}
       />
 
     </div>
