@@ -5,36 +5,107 @@ import {
   Send, 
   Sparkles, 
   CheckCheck, 
-  MessageSquare, 
   ChevronRight,
+  MessageSquare,
   Phone
 } from 'lucide-react';
 import { ZALO_LINK, HOTLINE_NUMBER, HOTLINE_RAW } from '../utils/phoneHandler';
 
+const AI_API_URL = import.meta.env.VITE_AI_API_URL || 'https://dudi-ai.onrender.com/api/chat';
+
 const QUICK_SUGGESTIONS = [
-  { id: 'pricing', label: '💡 Báo giá các gói web bán hàng', query: 'Chi phí các gói thiết kế website bán hàng tại DUDI như thế nào?' },
-  { id: 'standard', label: '⚡ Gói Tiêu Chuẩn 10tr có gì?', query: 'Gói Tiêu Chuẩn 10.000.000đ bao gồm những tính năng gì?' },
-  { id: 'payment', label: '💳 Phương thức thanh toán & Đơn', query: 'Website hỗ trợ những hình thức thanh toán và quản lý đơn nào?' },
-  { id: 'process', label: '🚀 Quy trình thiết kế 5 bước', query: 'Quy trình thiết kế và bàn giao website bán hàng tại DUDI như thế nào?' },
-  { id: 'contact', label: '📞 Gặp chuyên viên tư vấn', query: 'Tôi muốn gặp chuyên viên tư vấn làm website bán hàng' }
+  {
+    "id": "pricing",
+    "label": "💡 Báo giá các gói web bán hàng",
+    "query": "Chi phí các gói thiết kế website bán hàng tại DUDI như thế nào?"
+  },
+  {
+    "id": "standard",
+    "label": "⚡ Gói Tiêu Chuẩn 10tr có gì?",
+    "query": "Gói Tiêu Chuẩn thiết kế web bán hàng 10 triệu bao gồm những tính năng gì?"
+  },
+  {
+    "id": "contact",
+    "label": "📞 Kết nối chuyên viên tư vấn",
+    "query": "Tôi muốn gặp chuyên viên tư vấn trực tiếp về website bán hàng"
+  }
 ];
+
+const BOT_WELCOME_TEXT = "Xin chào! 👋\nTôi là DU - Trợ lý ảo AI của DUDI SOFTWARE.\nTôi có thể hỗ trợ gì cho bạn hôm nay?";
 
 const INITIAL_MESSAGES = [
   {
     id: 1,
     sender: 'bot',
-    text: "Xin chào! 👋\nTôi là Trợ lý AI Chuyên gia Website Bán Hàng DUDI.\nTôi có thể hỗ trợ gì cho kế hoạch kinh doanh online và bán hàng của bạn hôm nay?",
+    text: BOT_WELCOME_TEXT,
     time: '10:30',
     type: 'text'
   }
 ];
 
-export default function AIChatModal({ isOpen, onClose, onSelectPackage }) {
+function FormattedMessageText({ text, isBot }) {
+  if (!text) return null;
+  const lines = text.split('\n');
+
+  const parseInline = (str) => {
+    const regex = /(\*\*.*?\*\*|\*[^*]+?\*)/g;
+    const parts = str.split(regex);
+    return parts.map((part, idx) => {
+      if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+        return (
+          <strong key={idx} className={`font-bold ${isBot ? 'text-slate-900 dark:text-white' : 'text-white'}`}>
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      if (part.startsWith('*') && part.endsWith('*') && part.length >= 2) {
+        return <em key={idx} className="italic opacity-90">{part.slice(1, -1)}</em>;
+      }
+      return part;
+    });
+  };
+
+  return (
+    <div className="space-y-1.5 leading-relaxed text-[13.5px] sm:text-[14px]">
+      {lines.map((line, lIdx) => {
+        const trimmed = line.trim();
+        if (!trimmed) return <div key={lIdx} className="h-1.5" />;
+        const isBullet = trimmed.startsWith('- ') || trimmed.startsWith('• ') || (trimmed.startsWith('* ') && !trimmed.startsWith('**'));
+        const isNumbered = /^\d+\.\s/.test(trimmed);
+
+        if (isBullet) {
+          const bulletContent = trimmed.replace(/^[-•*]\s+/, '');
+          return (
+            <div key={lIdx} className="flex items-start gap-2 pl-0.5">
+              <span className={`select-none mt-1 text-xs font-bold text-[#D60F1A]`}>•</span>
+              <span className="flex-1">{parseInline(bulletContent)}</span>
+            </div>
+          );
+        }
+        if (isNumbered) {
+          const numMatch = trimmed.match(/^(\d+)\./);
+          const num = numMatch ? numMatch[1] : '•';
+          const numberedContent = trimmed.replace(/^\d+\.\s+/, '');
+          return (
+            <div key={lIdx} className="flex items-start gap-2 pl-0.5">
+              <span className={`select-none mt-0.5 text-xs font-bold text-[#D60F1A]`}>{num}.</span>
+              <span className="flex-1">{parseInline(numberedContent)}</span>
+            </div>
+          );
+        }
+        return <div key={lIdx}>{parseInline(line)}</div>;
+      })}
+    </div>
+  );
+}
+
+export default function AIChatModal({ isOpen, onClose }) {
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const modalRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -45,6 +116,28 @@ export default function AIChatModal({ isOpen, onClose, onSelectPackage }) {
     }
   }, [messages, isTyping, isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (event) => {
+      const isToggleBtn = event.target.closest('[data-chat-toggle="true"]');
+      if (isToggleBtn) return;
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        onClose();
+      }
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onClose();
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside, { passive: true });
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   const handleReset = () => {
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -52,94 +145,24 @@ export default function AIChatModal({ isOpen, onClose, onSelectPackage }) {
       {
         id: Date.now(),
         sender: 'bot',
-        text: "Xin chào! 👋\nTôi là Trợ lý AI Chuyên gia Website Bán Hàng DUDI.\nTôi có thể hỗ trợ gì cho kế hoạch kinh doanh online và bán hàng của bạn hôm nay?",
+        text: BOT_WELCOME_TEXT,
         time: timeStr,
         type: 'text'
       }
     ]);
   };
 
-  const generateBotResponse = (userText) => {
-    const query = userText.toLowerCase().trim();
-
-    if (query.includes('giá') || query.includes('gói') || query.includes('chi phí') || query.includes('báo giá') || query.includes('bao nhiêu')) {
-      return {
-        text: `DUDI cung cấp 3 gói thiết kế website bán hàng chuyên nghiệp, rõ ràng và minh bạch:\n\n` +
-          `• **Gói Cơ Bản (5.000.000đ)**: Tối đa 50 sản phẩm, 5 danh mục, giỏ hàng & thanh toán COD, phù hợp shop mới bắt đầu.\n` +
-          `• **Gói Tiêu Chuẩn (10.000.000đ - Khuyên dùng ⭐)**: Tối đa 300 sản phẩm, 20 danh mục, COD & Chuyển khoản QR, mã giảm giá, quản lý tồn kho, chuẩn SEO & tracking GA4.\n` +
-          `• **Gói Cao Cấp (Liên hệ riêng)**: Không giới hạn sản phẩm, cổng thanh toán online (VNPAY/MoMo), tích hợp CRM/ERP đa kênh.\n\n` +
-          `👉 Bạn có thể xem chi tiết bảng giá hoặc để lại thông tin để nhận bản vẽ Demo miễn phí!`,
-        actionType: 'pricing'
-      };
+  const scrollToSection = (sectionId) => {
+    const el = document.getElementById(sectionId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+      onClose();
     }
-
-    if (query.includes('tiêu chuẩn') || query.includes('10tr') || query.includes('10 triệu') || query.includes('standard')) {
-      return {
-        text: `⚡ **Gói Tiêu Chuẩn (10.000.000đ)** là lựa chọn được lựa chọn nhiều nhất tại DUDI:\n\n` +
-          `✅ **Quy mô:** Đăng tải đến 300 sản phẩm & 20 danh mục ngành hàng.\n` +
-          `✅ **Thanh toán:** Tích hợp COD và chuyển khoản QR ngân hàng tự động.\n` +
-          `✅ **Marketing:** Hỗ trợ tạo mã giảm giá voucher, quản lý tồn kho đơn giản.\n` +
-          `✅ **Đo lường:** Tích hợp Google Analytics 4 (GA4) theo dõi luồng mua hàng.\n` +
-          `✅ **Bàn giao:** 100% mã nguồn, hướng dẫn video và bảo hành kỹ thuật 12 tháng.`,
-        actionType: 'standard'
-      };
-    }
-
-    if (query.includes('thanh toán') || query.includes('cod') || query.includes('ngân hàng') || query.includes('chuyển khoản') || query.includes('qr') || query.includes('vnpay') || query.includes('momo')) {
-      return {
-        text: `💳 Website bán hàng DUDI hỗ trợ đa dạng phương thức thanh toán linh hoạt:\n\n` +
-          `1. **COD (Giao hàng thu tiền):** Tự động xác nhận đơn qua Email & Trang cảm ơn.\n` +
-          `2. **Chuyển khoản QR Code ngân hàng:** Tạo mã QR kèm số tiền và mã đơn tự động để khách quét thanh toán tức thì.\n` +
-          `3. **Cổng thanh toán trực tuyến (Theo yêu cầu):** Tích hợp VNPAY, MoMo, ZaloPay hoặc thẻ Visa/Mastercard.\n\n` +
-          `Hệ thống quản trị trực quan giúp bạn lọc đơn, đổi trạng thái (Mới -> Đang giao -> Hoàn tất) cực kỳ dễ dàng!`,
-        actionType: 'payment'
-      };
-    }
-
-    if (query.includes('quy trình') || query.includes('bước') || query.includes('thời gian') || query.includes('triển khai') || query.includes('bao lâu')) {
-      return {
-        text: `🚀 **Quy trình 5 bước thiết kế web bán hàng chuẩn hóa tại DUDI:**\n\n` +
-          `1. **Tiếp nhận & Tư vấn:** Xác định ngành hàng & nhu cầu tính năng (1 ngày).\n` +
-          `2. **Thiết kế Demo:** Lên bản vẽ giao diện UX/UI theo phong cách thương hiệu (2 - 3 ngày).\n` +
-          `3. **Lập trình giỏ hàng & thanh toán:** Hoàn thiện luồng mua hàng & chuẩn SEO (4 - 7 ngày).\n` +
-          `4. **Nhập liệu & Test lỗi:** Kiểm thử tương thích trên Mobile/Tablet/PC (1 - 2 ngày).\n` +
-          `5. **Bàn giao & Bảo hành:** Bàn giao mã nguồn, video hướng dẫn và bảo hành 12 tháng.\n\n` +
-          `⏱ **Thời gian hoàn thiện:** Chỉ từ **7 đến 14 ngày làm việc**!`,
-        actionType: 'process'
-      };
-    }
-
-    if (query.includes('liên hệ') || query.includes('tư vấn') || query.includes('số điện thoại') || query.includes('gặp') || query.includes('hotline') || query.includes('zalo') || query.includes('sđt')) {
-      return {
-        text: `Đội ngũ Chuyên gia DUDI luôn sẵn sàng lắng nghe và tư vấn miễn phí cho bạn:\n\n` +
-          `📞 Hotline: **${HOTLINE_NUMBER}**\n` +
-          `💬 Zalo Official: Nhấn nút bên dưới để trao đổi trực tiếp\n` +
-          `🏢 Trụ sở: TP. Hồ Chí Minh\n\n` +
-          `Chuyên viên kỹ thuật sẽ phản hồi ngay lập tức trong vòng 15 phút!`,
-        actionType: 'contact'
-      };
-    }
-
-    if (query.includes('bàn giao') || query.includes('mã nguồn') || query.includes('source code') || query.includes('bảo hành')) {
-      return {
-        text: `🛡 **Cam kết Bàn giao & Bảo hành tại DUDI:**\n\n` +
-          `• **100% Sở hữu:** Bàn giao toàn bộ source code và quyền quản trị cao nhất.\n` +
-          `• **Hướng dẫn quản trị:** Bàn giao tài liệu và video hướng dẫn chi tiết cách thêm sản phẩm, xử lý đơn hàng.\n` +
-          `• **Bảo hành 12 tháng:** Hỗ trợ kỹ thuật, sao lưu dữ liệu và sửa lỗi phát sinh hoàn toàn miễn phí.`,
-        actionType: 'guarantee'
-      };
-    }
-
-    return {
-      text: `Cảm ơn bạn đã quan tâm! DUDI có thể hỗ trợ bạn thiết kế web bán hàng, tối ưu tỷ lệ chuyển đổi, tích hợp thanh toán tự động hoặc xây dựng hệ thống e-commerce chuyên nghiệp.\n\n` +
-        `Bạn muốn tìm hiểu thêm về **Báo giá**, **Tính năng Gói Tiêu Chuẩn** hay cần **Gặp chuyên viên tư vấn** trực tiếp?`,
-      actionType: 'general'
-    };
   };
 
-  const handleSendMessage = (textToSend) => {
+  const handleSendMessage = async (textToSend) => {
     const text = (textToSend || inputValue).trim();
-    if (!text) return;
+    if (!text || isTyping) return;
 
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -156,22 +179,90 @@ export default function AIChatModal({ isOpen, onClose, onSelectPackage }) {
     setInputValue('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      const botReply = generateBotResponse(text);
+    const historyPayload = messages
+      .filter((m) => !m.isError)
+      .map((m) => ({
+        role: m.sender === 'user' ? 'user' : 'assistant',
+        content: m.text
+      }));
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 35000);
+
+      const response = await fetch(AI_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text,
+          history: historyPayload
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Máy chủ phản hồi mã: ${response.status}`);
+      }
+
+      let botReplyText = '';
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await response.json();
+        botReplyText = data.reply || data.response || data.message || data.text || data.answer || JSON.stringify(data);
+      } else {
+        botReplyText = await response.text();
+      }
+
+      if (!botReplyText || !botReplyText.trim()) {
+        botReplyText = 'DUDI đã nhận được thông tin từ bạn. Nếu cần giải đáp nhanh hoặc tư vấn chuyên sâu, quý khách có thể liên hệ trực tiếp hotline để được hỗ trợ tức thì!';
+      }
+
       const botTime = new Date();
       const botTimeStr = `${String(botTime.getHours()).padStart(2, '0')}:${String(botTime.getMinutes()).padStart(2, '0')}`;
+
+      let actionType = null;
+      const lowerReply = botReplyText.toLowerCase();
+      if (lowerReply.includes('hotline') || lowerReply.includes('zalo') || lowerReply.includes('liên hệ')) {
+        actionType = 'contact';
+      } else if (lowerReply.includes('báo giá') || lowerReply.includes('chi phí') || lowerReply.includes('gói') || lowerReply.includes('bảng giá')) {
+        actionType = 'pricing';
+      } else if (lowerReply.includes('dịch vụ') || lowerReply.includes('giải pháp') || lowerReply.includes('hạng mục')) {
+        actionType = 'services';
+      } else if (lowerReply.includes('quy trình') || lowerReply.includes('bước')) {
+        actionType = 'process';
+      }
 
       const newBotMsg = {
         id: Date.now() + 1,
         sender: 'bot',
-        text: botReply.text,
+        text: botReplyText.trim(),
         time: botTimeStr,
-        actionType: botReply.actionType
+        actionType: actionType
       };
 
       setMessages((prev) => [...prev, newBotMsg]);
+    } catch (error) {
+      console.error('Lỗi kết nối AI Backend:', error);
+      const botTime = new Date();
+      const botTimeStr = `${String(botTime.getHours()).padStart(2, '0')}:${String(botTime.getMinutes()).padStart(2, '0')}`;
+      const isTimeout = error.name === 'AbortError';
+      const errorMsg = {
+        id: Date.now() + 1,
+        sender: 'bot',
+        text: isTimeout
+          ? '⚠️ Kết nối tới máy chủ AI đang bị trễ do server đang khởi động. Bạn vui lòng thử lại sau giây lát hoặc liên hệ trực tiếp đội ngũ DUDI để được hỗ trợ ngay!'
+          : '⚠️ Không thể kết nối tới máy chủ AI DUDI. Bạn vui lòng kiểm tra kết nối mạng hoặc liên hệ trực tiếp chuyên viên tư vấn qua Hotline/Zalo.',
+        time: botTimeStr,
+        actionType: 'contact',
+        isError: true,
+        retryText: text
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
       setIsTyping(false);
-    }, 600);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -181,676 +272,249 @@ export default function AIChatModal({ isOpen, onClose, onSelectPackage }) {
     }
   };
 
-  const scrollToSection = (sectionId) => {
-    const el = document.getElementById(sectionId);
-    if (el) {
-      const headerOffset = 80;
-      const elementPosition = el.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
-      onClose();
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
-    <>
-      <div className="ai-chat-backdrop" onClick={onClose} aria-hidden="true" />
+    <div 
+      className="fixed inset-0 sm:inset-auto sm:bottom-6 md:bottom-7 sm:right-22 md:right-24 z-50 flex items-end sm:items-auto justify-center sm:justify-end p-2 sm:p-0 pointer-events-auto animate-in fade-in zoom-in-95 duration-200"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Cửa sổ trò chuyện với Trợ lý AI DU - DUDI SOFTWARE"
+    >
+      <div 
+        className="fixed inset-0 bg-black/40 backdrop-blur-xs sm:hidden -z-10" 
+        onClick={onClose}
+        aria-hidden="true"
+      />
 
       <div 
-        className="ai-chat-modal-wrapper"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Cửa sổ trò chuyện với Trợ lý AI DUDI"
+        ref={modalRef}
+        className="w-full sm:w-[390px] md:w-[420px] h-[520px] sm:h-[550px] max-h-[calc(100dvh-4.5rem)] bg-white dark:bg-[#0F1422] rounded-3xl sm:rounded-[28px] shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-slate-100 dark:border-slate-800 flex flex-col overflow-hidden text-[#0F172A] dark:text-[#F8FAFC] transition-all"
       >
-        <div className="ai-chat-window">
-          {/* 1. Header */}
-          <div className="ai-chat-header">
-            <div className="ai-chat-header-info">
-              <div className="ai-chat-avatar-wrapper">
-                <img 
-                  src="/robot-mascot.webp" 
-                  alt="Trợ lý AI DUDI" 
-                  className="ai-chat-avatar-img"
-                />
-                <span className="ai-chat-online-badge" />
-              </div>
-
-              <div className="ai-chat-title-group">
-                <h3>
-                  <span>Trợ lý AI DUDI</span>
-                </h3>
-                <p>
-                  <span>Luôn sẵn sàng hỗ trợ bạn</span>
-                  <span className="ai-chat-status-dot" />
-                </p>
-              </div>
+        {/* Header */}
+        <div className="px-4 py-3.5 sm:px-5 sm:py-4 bg-white/90 dark:bg-[#0F1422]/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between z-10">
+          <div className="flex items-center gap-3">
+            <div className={`relative w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-red-50 border-red-100 p-1 flex items-center justify-center border shadow-xs`}>
+              <img 
+                src="/robot-mascot.webp" 
+                alt="DU Trợ lý AI" 
+                className="w-full h-full object-contain drop-shadow-xs"
+                onError={(e) => {
+                  e.target.src = '/robot-mascot.png';
+                }}
+              />
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-[#0F1422] rounded-full animate-pulse" />
             </div>
 
-            <div className="ai-chat-header-actions">
-              <button
-                type="button"
-                onClick={handleReset}
-                title="Làm mới cuộc trò chuyện"
-                className="ai-chat-icon-btn"
-                aria-label="Làm mới chat"
-              >
-                <RotateCcw size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                title="Đóng cửa sổ chat"
-                className="ai-chat-icon-btn"
-                aria-label="Đóng chat"
-              >
-                <X size={18} />
-              </button>
+            <div>
+              <h3 className="font-heading font-bold text-[16px] sm:text-[17px] leading-tight text-[#0F172A] dark:text-white flex items-center gap-1.5">
+                <span>DU - Trợ lý AI DUDI</span>
+                <Sparkles className={`w-3.5 h-3.5 text-[#D60F1A] animate-pulse`} />
+              </h3>
+              <p className="text-[12px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-ping opacity-75" />
+                <span>Trực tuyến 24/7 • DUDI AI Backend</span>
+              </p>
             </div>
           </div>
 
-          {/* 2. Messages List */}
-          <div className="ai-chat-body">
-            {messages.map((msg) => {
-              const isBot = msg.sender === 'bot';
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleReset}
+              title="Làm mới cuộc trò chuyện"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+            <button
+              onClick={onClose}
+              title="Đóng cửa sổ chat"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
 
-              return (
-                <div
-                  key={msg.id}
-                  className={`ai-chat-message-row ${isBot ? 'bot' : 'user'}`}
-                >
-                  <div className="ai-chat-bubble-container">
-                    <div className="ai-chat-bubble">
-                      <div style={{ whiteSpace: 'pre-line' }}>
-                        {msg.text.split('\n').map((line, i) => {
-                          const parts = line.split(/(\*\*.*?\*\*)/g);
-                          return (
-                            <React.Fragment key={i}>
-                              {parts.map((part, pIdx) => {
-                                if (part.startsWith('**') && part.endsWith('**')) {
-                                  return <strong key={pIdx}>{part.slice(2, -2)}</strong>;
-                                }
-                                return part;
-                              })}
-                              {i < msg.text.split('\n').length - 1 && <br />}
-                            </React.Fragment>
-                          );
-                        })}
-                      </div>
+        {/* Messages Body */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5 space-y-4 scroll-smooth">
+          {messages.map((msg) => {
+            const isBot = msg.sender === 'bot';
+            return (
+              <div
+                key={msg.id}
+                className={`flex flex-col ${isBot ? 'items-start' : 'items-end'} animate-in fade-in slide-in-from-bottom-2 duration-200`}
+              >
+                <div className={`flex gap-2.5 max-w-[90%] ${isBot ? 'flex-row' : 'flex-row-reverse'}`}>
+                  {isBot && (
+                    <div className={`w-7 h-7 rounded-xl bg-red-50 border-red-100 p-0.5 flex-shrink-0 flex items-center justify-center border mt-1`}>
+                      <img 
+                        src="/robot-mascot.webp" 
+                        alt="DU Bot" 
+                        className="w-full h-full object-contain"
+                        onError={(e) => { e.target.src = '/robot-mascot.png'; }}
+                      />
+                    </div>
+                  )}
 
-                      {/* Bot Action Buttons */}
-                      {isBot && msg.actionType && (
-                        <div className="ai-chat-actions">
-                          {msg.actionType === 'pricing' && (
-                            <button
-                              type="button"
-                              onClick={() => scrollToSection('pricing')}
-                              className="ai-chat-action-btn btn-indigo"
-                            >
-                              <span>Xem Bảng giá</span>
-                              <ChevronRight size={13} />
-                            </button>
-                          )}
-                          {msg.actionType === 'standard' && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (onSelectPackage) onSelectPackage('Tiêu chuẩn');
-                                scrollToSection('contact');
-                              }}
-                              className="ai-chat-action-btn btn-indigo"
-                            >
-                              <span>Chọn Gói Tiêu Chuẩn</span>
-                              <ChevronRight size={13} />
-                            </button>
-                          )}
-                          {msg.actionType === 'contact' && (
-                            <>
-                              <a
-                                href={ZALO_LINK}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="ai-chat-action-btn btn-blue"
-                              >
-                                <MessageSquare size={13} />
-                                <span>Nhắn Zalo</span>
-                              </a>
-                              <button
-                                type="button"
-                                onClick={() => scrollToSection('contact')}
-                                className="ai-chat-action-btn btn-gray"
-                              >
-                                <span>Điền Form</span>
-                              </button>
-                            </>
-                          )}
-                          {msg.actionType === 'process' && (
-                            <button
-                              type="button"
-                              onClick={() => scrollToSection('process')}
-                              className="ai-chat-action-btn btn-indigo"
-                            >
-                              <span>Sơ đồ 5 bước</span>
-                              <ChevronRight size={13} />
-                            </button>
-                          )}
+                  <div>
+                    <div
+                      className={`px-4 py-3 rounded-2xl ${
+                        isBot
+                          ? msg.isError
+                            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 rounded-tl-sm border border-amber-200 dark:border-amber-800/60 shadow-xs'
+                            : 'bg-slate-100 dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 rounded-tl-sm border border-slate-200/60 dark:border-slate-700/60 shadow-xs'
+                          : 'bg-gradient-to-r from-red-600 to-rose-600 !text-white rounded-tr-sm shadow-md font-medium'
+                      }`}
+                    >
+                      <FormattedMessageText text={msg.text} isBot={isBot} />
+
+                      {msg.isError && msg.retryText && (
+                        <div className="mt-3 pt-2 border-t border-amber-200/60 dark:border-amber-800/60 flex items-center gap-2">
+                          <button
+                            onClick={() => handleSendMessage(msg.retryText)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 text-xs font-semibold transition-colors cursor-pointer"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            <span>Thử gửi lại</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {isBot && !msg.isError && msg.actionType && (
+                        <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-slate-700/60 flex flex-wrap gap-2">
+                          
+    {msg.actionType === 'pricing' && (
+      <button
+        onClick={() => scrollToSection('pricing')}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-950/60 dark:hover:bg-red-900/80 text-[#D60F1A] dark:text-red-400 text-xs font-bold transition-colors cursor-pointer"
+      >
+        <span>Xem Bảng giá</span>
+        <ChevronRight className="w-3.5 h-3.5" />
+      </button>
+    )}
+    {msg.actionType === 'contact' && (
+      <>
+        <a
+          href={typeof ZALO_LINK !== 'undefined' ? ZALO_LINK : 'https://zalo.me/0909163821'}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold transition-colors shadow-xs"
+        >
+          <MessageSquare className="w-3.5 h-3.5" />
+          <span>Nhắn Zalo</span>
+        </a>
+        <a
+          href={`tel:${typeof HOTLINE_RAW !== 'undefined' ? HOTLINE_RAW : '0909163821'}`}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-colors shadow-xs"
+        >
+          <Phone className="w-3.5 h-3.5" />
+          <span>Gọi Hotline</span>
+        </a>
+        <button
+          onClick={() => scrollToSection('contact')}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors cursor-pointer"
+        >
+          <span>Điền Form</span>
+        </button>
+      </>
+    )}
+    {msg.actionType === 'process' && (
+      <button
+        onClick={() => scrollToSection('process')}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-950/60 text-[#D60F1A] dark:text-red-400 text-xs font-bold transition-colors cursor-pointer"
+      >
+        <span>Xem Quy trình</span>
+        <ChevronRight className="w-3.5 h-3.5" />
+      </button>
+    )}
+  
                         </div>
                       )}
                     </div>
 
-                    <div className="ai-chat-meta">
+                    <div className={`text-[11px] text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1 ${isBot ? 'ml-1' : 'justify-end mr-1'}`}>
                       <span>{msg.time}</span>
-                      {!isBot && <CheckCheck size={13} className="ai-chat-seen-icon" />}
+                      {!isBot && <CheckCheck className={`w-3.5 h-3.5 text-red-500`} />}
                     </div>
                   </div>
                 </div>
-              );
-            })}
-
-            {isTyping && (
-              <div className="ai-chat-message-row bot">
-                <div className="ai-chat-typing-bubble">
-                  <div className="ai-typing-dot" />
-                  <div className="ai-typing-dot" />
-                  <div className="ai-typing-dot" />
-                </div>
               </div>
-            )}
+            );
+          })}
 
-            <div ref={messagesEndRef} />
-          </div>
+          {isTyping && (
+            <div className="flex items-start gap-2.5 animate-in fade-in duration-150">
+              <div className={`w-7 h-7 rounded-xl bg-red-50 border-red-100 p-0.5 flex-shrink-0 flex items-center justify-center border`}>
+                <img 
+                  src="/robot-mascot.webp" 
+                  alt="Bot" 
+                  className="w-full h-full object-contain"
+                  onError={(e) => { e.target.src = '/robot-mascot.png'; }}
+                />
+              </div>
+              <div className="px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-2xl rounded-tl-sm border border-slate-200/50 dark:border-slate-700/50 flex items-center gap-1.5 shadow-xs">
+                <span className={`w-2 h-2 rounded-full bg-[#D60F1A] animate-bounce [animation-delay:-0.3s]`} />
+                <span className={`w-2 h-2 rounded-full bg-[#D60F1A] animate-bounce [animation-delay:-0.15s]`} />
+                <span className={`w-2 h-2 rounded-full bg-[#D60F1A] animate-bounce`} />
+                <span className="text-xs text-slate-400 dark:text-slate-500 ml-1.5">DU đang soạn câu trả lời...</span>
+              </div>
+            </div>
+          )}
 
-          {/* 3. Quick Suggestions Chips */}
-          <div className="ai-chat-suggestions">
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Quick Suggestions Chips */}
+        <div className="px-3.5 py-2.5 bg-white dark:bg-[#0F1422] border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-0.5 text-nowrap">
             {QUICK_SUGGESTIONS.map((chip) => (
               <button
                 key={chip.id}
-                type="button"
+                disabled={isTyping}
                 onClick={() => handleSendMessage(chip.query)}
-                className="ai-chat-chip"
+                className="text-[12px] font-medium px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-slate-700/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex-shrink-0 shadow-2xs cursor-pointer"
               >
                 {chip.label}
               </button>
             ))}
           </div>
+        </div>
 
-          {/* 4. Footer Input */}
-          <div className="ai-chat-footer">
-            <form 
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSendMessage();
-              }}
-              className="ai-chat-input-form"
+        {/* Footer Input */}
+        <div className="p-3 sm:p-4 bg-white dark:bg-[#0F1422] border-t border-slate-100 dark:border-slate-800/80">
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSendMessage();
+            }}
+            className={`flex items-center gap-2 relative bg-slate-100 dark:bg-slate-900 rounded-full border border-slate-200 dark:border-slate-700/80 px-3.5 py-1.5 focus-within:ring-red-500/20 focus-within:border-red-500 transition-all`}
+          >
+            <input
+              ref={inputRef}
+              type="text"
+              value={inputValue}
+              disabled={isTyping}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={isTyping ? "Trợ lý AI đang phản hồi..." : "Nhập tin nhắn của bạn..."}
+              className="flex-1 bg-transparent text-[13.5px] sm:text-[14px] text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none py-1.5 disabled:opacity-60"
+            />
+            <button
+              type="submit"
+              disabled={!inputValue.trim() || isTyping}
+              aria-label="Gửi tin nhắn"
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                inputValue.trim() && !isTyping
+                  ? 'bg-gradient-to-tr from-[#D60F1A] to-[#EC1420] text-white shadow-md hover:scale-105 active:scale-95 cursor-pointer'
+                  : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
+              }`}
             >
-              <input
-                ref={inputRef}
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Nhập tin nhắn của bạn..."
-                className="ai-chat-input"
-              />
-              <button
-                type="submit"
-                disabled={!inputValue.trim()}
-                aria-label="Gửi tin nhắn"
-                className={`ai-chat-send-btn ${inputValue.trim() ? 'active' : ''}`}
-              >
-                <Send size={15} style={{ marginLeft: '1px' }} />
-              </button>
-            </form>
-          </div>
+              <Send className="w-4 h-4 ml-0.5" />
+            </button>
+          </form>
         </div>
       </div>
-
-      <style>{`
-        /* AI Chatbot Styles matching Light Mode reference */
-        .ai-chat-backdrop {
-          position: fixed;
-          inset: 0;
-          background: rgba(15, 23, 42, 0.25);
-          backdrop-filter: blur(1.5px);
-          -webkit-backdrop-filter: blur(1.5px);
-          z-index: 9990;
-          animation: chatFadeIn 0.2s ease-out;
-        }
-
-        @keyframes chatFadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        @keyframes chatSlideUp {
-          from {
-            opacity: 0;
-            transform: translateY(16px) scale(0.96);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-
-        .ai-chat-modal-wrapper {
-          position: fixed;
-          bottom: 24px;
-          right: 88px;
-          z-index: 9999;
-          animation: chatSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-          pointer-events: auto;
-        }
-
-        .ai-chat-window {
-          width: 385px;
-          max-width: calc(100vw - 110px);
-          height: 560px;
-          max-height: calc(90vh - 30px);
-          background: #ffffff;
-          border-radius: 28px;
-          box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(226, 232, 240, 0.9);
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        }
-
-        /* 1. Header */
-        .ai-chat-header {
-          padding: 14px 18px;
-          background: rgba(255, 255, 255, 0.98);
-          backdrop-filter: blur(8px);
-          border-bottom: 1px solid #f1f5f9;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          flex-shrink: 0;
-        }
-
-        .ai-chat-header-info {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .ai-chat-avatar-wrapper {
-          position: relative;
-          width: 44px;
-          height: 44px;
-          border-radius: 16px;
-          background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 4px;
-          flex-shrink: 0;
-          box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
-        }
-
-        .ai-chat-avatar-img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-        }
-
-        .ai-chat-online-badge {
-          position: absolute;
-          bottom: -1px;
-          right: -1px;
-          width: 11px;
-          height: 11px;
-          border-radius: 50%;
-          background-color: #10b981;
-          border: 2px solid #ffffff;
-        }
-
-        .ai-chat-title-group h3 {
-          font-size: 1.1rem;
-          font-weight: 800;
-          color: #0f172a;
-          margin: 0;
-          line-height: 1.25;
-        }
-
-        .ai-chat-title-group p {
-          margin: 2px 0 0;
-          font-size: 0.8rem;
-          color: #64748b;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-
-        .ai-chat-status-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background-color: #22c55e;
-          display: inline-block;
-        }
-
-        .ai-chat-header-actions {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-
-        .ai-chat-icon-btn {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          border: none;
-          background: transparent;
-          color: #64748b;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .ai-chat-icon-btn:hover {
-          background: #f1f5f9;
-          color: #0f172a;
-        }
-
-        /* 2. Chat Messages Body */
-        .ai-chat-body {
-          flex: 1;
-          overflow-y: auto;
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-          background: #fafafa;
-        }
-
-        .ai-chat-message-row {
-          display: flex;
-          max-width: 88%;
-          animation: chatMsgAppear 0.2s ease-out;
-        }
-
-        @keyframes chatMsgAppear {
-          from {
-            opacity: 0;
-            transform: translateY(6px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .ai-chat-message-row.bot {
-          align-self: flex-start;
-        }
-
-        .ai-chat-message-row.user {
-          align-self: flex-end;
-        }
-
-        .ai-chat-bubble-container {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .ai-chat-bubble {
-          padding: 12px 16px;
-          font-size: 0.885rem;
-          line-height: 1.55;
-          border-radius: 20px;
-          word-break: break-word;
-        }
-
-        .ai-chat-message-row.bot .ai-chat-bubble {
-          background: #ffffff;
-          color: #1e293b;
-          border-top-left-radius: 4px;
-          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-          border: 1px solid #e2e8f0;
-        }
-
-        .ai-chat-message-row.user .ai-chat-bubble {
-          background: linear-gradient(135deg, #5046e5 0%, #6366f1 100%);
-          color: #ffffff;
-          border-top-right-radius: 4px;
-          box-shadow: 0 4px 12px rgba(80, 70, 229, 0.25);
-        }
-
-        .ai-chat-bubble strong {
-          font-weight: 700;
-        }
-
-        .ai-chat-meta {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 0.72rem;
-          color: #94a3b8;
-          margin-top: 4px;
-        }
-
-        .ai-chat-message-row.bot .ai-chat-meta {
-          margin-left: 4px;
-          justify-content: flex-start;
-        }
-
-        .ai-chat-message-row.user .ai-chat-meta {
-          margin-right: 4px;
-          justify-content: flex-end;
-        }
-
-        .ai-chat-seen-icon {
-          color: #6366f1;
-          font-size: 0.75rem;
-          display: inline-flex;
-        }
-
-        /* Quick Action Buttons inside Bot Message */
-        .ai-chat-actions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 6px;
-          margin-top: 10px;
-          padding-top: 8px;
-          border-top: 1px solid #f1f5f9;
-        }
-
-        .ai-chat-action-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          padding: 5px 10px;
-          border-radius: 8px;
-          font-size: 0.75rem;
-          font-weight: 600;
-          cursor: pointer;
-          border: none;
-          text-decoration: none;
-          transition: all 0.15s ease;
-        }
-
-        .ai-chat-action-btn.btn-indigo {
-          background: #eef2ff;
-          color: #4f46e5;
-        }
-
-        .ai-chat-action-btn.btn-indigo:hover {
-          background: #e0e7ff;
-        }
-
-        .ai-chat-action-btn.btn-blue {
-          background: #0068ff;
-          color: #ffffff;
-        }
-
-        .ai-chat-action-btn.btn-blue:hover {
-          background: #0052cc;
-        }
-
-        .ai-chat-action-btn.btn-gray {
-          background: #f1f5f9;
-          color: #334155;
-        }
-
-        .ai-chat-action-btn.btn-gray:hover {
-          background: #e2e8f0;
-        }
-
-        /* Typing Indicator */
-        .ai-chat-typing-bubble {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          padding: 10px 14px;
-          background: #ffffff;
-          border: 1px solid #e2e8f0;
-          border-radius: 16px;
-          border-top-left-radius: 4px;
-          width: fit-content;
-        }
-
-        .ai-typing-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background-color: #6366f1;
-          animation: typingBounce 1.2s infinite ease-in-out;
-        }
-
-        .ai-typing-dot:nth-child(1) { animation-delay: -0.3s; }
-        .ai-typing-dot:nth-child(2) { animation-delay: -0.15s; }
-        .ai-typing-dot:nth-child(3) { animation-delay: 0s; }
-
-        @keyframes typingBounce {
-          0%, 80%, 100% { transform: translateY(0); }
-          40% { transform: translateY(-5px); }
-        }
-
-        /* 3. Quick Suggestion Chips */
-        .ai-chat-suggestions {
-          padding: 8px 12px;
-          background: #ffffff;
-          border-top: 1px solid #f1f5f9;
-          overflow-x: auto;
-          white-space: nowrap;
-          display: flex;
-          gap: 6px;
-          scrollbar-width: none;
-          flex-shrink: 0;
-        }
-
-        .ai-chat-suggestions::-webkit-scrollbar {
-          display: none;
-        }
-
-        .ai-chat-chip {
-          padding: 6px 14px;
-          border-radius: 9999px;
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
-          color: #334155;
-          font-size: 0.775rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.15s ease;
-          flex-shrink: 0;
-        }
-
-        .ai-chat-chip:hover {
-          background: #eff6ff;
-          border-color: #93c5fd;
-          color: #2563eb;
-        }
-
-        /* 4. Footer Input */
-        .ai-chat-footer {
-          padding: 12px 14px;
-          background: #ffffff;
-          border-top: 1px solid #f1f5f9;
-          flex-shrink: 0;
-        }
-
-        .ai-chat-input-form {
-          display: flex;
-          align-items: center;
-          background: #ffffff;
-          border-radius: 9999px;
-          padding: 4px 6px 4px 16px;
-          border: 1.5px solid #6366f1;
-          box-shadow: 0 1px 4px rgba(99, 102, 241, 0.1);
-          transition: all 0.2s ease;
-        }
-
-        .ai-chat-input-form:focus-within {
-          border-color: #4f46e5;
-          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-        }
-
-        .ai-chat-input {
-          flex: 1;
-          border: none;
-          background: transparent;
-          font-size: 0.885rem;
-          color: #0f172a;
-          outline: none;
-          padding: 6px 0;
-        }
-
-        .ai-chat-input::placeholder {
-          color: #94a3b8;
-        }
-
-        .ai-chat-send-btn {
-          width: 34px;
-          height: 34px;
-          border-radius: 50%;
-          border: none;
-          background: #e2e8f0;
-          color: #94a3b8;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: not-allowed;
-          transition: all 0.2s ease;
-          flex-shrink: 0;
-        }
-
-        .ai-chat-send-btn.active {
-          background: linear-gradient(135deg, #5046e5 0%, #6366f1 100%);
-          color: #ffffff;
-          cursor: pointer;
-          box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
-        }
-
-        .ai-chat-send-btn.active:hover {
-          transform: scale(1.05);
-        }
-
-        /* Responsive adjustment for Mobile */
-        @media (max-width: 768px) {
-          .ai-chat-modal-wrapper {
-            bottom: 0;
-            right: 0;
-            left: 0;
-            top: 0;
-            display: flex;
-            align-items: flex-end;
-            padding: 0;
-          }
-
-          .ai-chat-window {
-            width: 100%;
-            max-width: 100%;
-            height: 82vh;
-            border-bottom-left-radius: 0;
-            border-bottom-right-radius: 0;
-          }
-        }
-      `}</style>
-    </>
+    </div>
   );
 }
